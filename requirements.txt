@@ -1,0 +1,12 @@
+pandas>=1.5
+numpy>=1.23
+scikit-learn>=1.2
+matplotlib>=3.6
+seaborn>=0.12
+lifelines>=0.27
+xgboost>=1.7
+lightgbm>=3.3
+streamlit>=1.28
+plotly>=5.15
+imbalanced-learn>=0.10
+ipykernel>=6.0
