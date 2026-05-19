@@ -6,7 +6,7 @@
 
 End-to-end churn prediction pipeline for a music streaming platform, from raw transaction history to a deployed tool that marketing teams can actually use.
 
-**[Live Dashboard →](https://kkbox-churn-prediction-ecjvxmyhusiawrcqthqbkd.streamlit.app/)**  |  **[Medium Article →](https://INSERT_MEDIUM_URL)**
+**[Live Dashboard →](https://kkbox-churn-prediction-ecjvxmyhusiawrcqthqbkd.streamlit.app/)**  |  **[Medium Article →](https://medium.com/p/ca184844eee5?postPublishedType=initial)**
 
 ---
 
