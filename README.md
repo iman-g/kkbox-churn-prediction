@@ -1,18 +1,18 @@
 # KKBOX Churn Prediction
 
-![Tests](https://github.com/iman-g/kkbox-churn-prediction/actions/workflows/ci.yml/badge.svg)
+![Tests](https://github.com/iman-g/kkbox-churn-prediction/actions/workflows/ci.yml/badge.svg?branch=main)
 [![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://python.org)
-[![Streamlit](https://img.shields.io/badge/dashboard-streamlit-red)](https://INSERT_STREAMLIT_URL)
+[![Streamlit](https://img.shields.io/badge/dashboard-streamlit-red)](https://kkbox-churn-prediction-ecjvxmyhusiawrcqthqbkd.streamlit.app/)
 
-End-to-end churn prediction pipeline for a music streaming platform — from raw transaction history to a deployed tool that marketing teams can actually use.
+End-to-end churn prediction pipeline for a music streaming platform, from raw transaction history to a deployed tool that marketing teams can actually use.
 
-**[Live Dashboard →](https://INSERT_STREAMLIT_URL)**  |  **[Medium Article →](https://INSERT_MEDIUM_URL)**
+**[Live Dashboard →](https://kkbox-churn-prediction-ecjvxmyhusiawrcqthqbkd.streamlit.app/)**  |  **[Medium Article →](https://INSERT_MEDIUM_URL)**
 
 ---
 
 ## The Problem
 
-KKBOX needed to identify subscribers likely to cancel before their next renewal. The dataset covers 970K users and 16M subscription transactions. Churn rate is 9% — low enough that a naive model (predict nobody churns) hits 91% accuracy while being completely useless.
+KKBOX needed to identify subscribers likely to cancel before their next renewal. The dataset covers 970K users and 16M subscription transactions. Churn rate is 9%, low enough that a naive model (predict nobody churns) hits 91% accuracy while being completely useless.
 
 ---
 
@@ -21,30 +21,30 @@ KKBOX needed to identify subscribers likely to cancel before their next renewal.
 | Metric | Value |
 |---|---|
 | OOF AUC | **0.9171** |
-| Average Precision | **0.7174** — 8× above random baseline |
+| Average Precision | **0.7174**, 8× above random baseline |
 | Precision at operating threshold | 72.9% |
 | Recall at operating threshold | 60.0% |
 | CV stability (std across 5 folds) | 0.00103 |
 
-At the tuned threshold: for every 100 users flagged for a retention campaign, 73 will actually churn. The remaining 27 false alarms still receive a retention offer — an acceptable trade-off when the cost of missing a churner exceeds the cost of a discounted offer.
+At the tuned threshold: for every 100 users flagged for a retention campaign, 73 will actually churn. The remaining 27 false alarms still receive a retention offer, an acceptable trade-off when the cost of missing a churner exceeds the cost of a discounted offer.
 
 ---
 
 ## Approach
 
-### Phase 1 — Survival Analysis
+### Phase 1: Survival Analysis
 
 Applied Kaplan-Meier estimation to test whether a data-driven inactivity threshold could replace the industry default of "30 days of inactivity = churned."
 
-Finding: it couldn't, and that's the interesting result. 82.5% of KKBOX subscription periods renew on or before the expiry date — there is no meaningful inactivity gap to model. The survival curve never crosses 50% churn probability within the observable window. This reveals that KKBOX's auto-renewal model makes gap-based survival analysis structurally uninformative, and motivates the binary classification approach in Phase 2. The segmented curves (by subscription frequency) confirm this holds across all user types.
+Finding: it couldn't, and that's the interesting result. 82.5% of KKBOX subscription periods renew on or before the expiry date, there is no meaningful inactivity gap to model. The survival curve never crosses 50% churn probability within the observable window. This reveals that KKBOX's auto-renewal model makes gap-based survival analysis structurally uninformative, and motivates the binary classification approach in Phase 2. The segmented curves (by subscription frequency) confirm this holds across all user types.
 
 This is the kind of finding that only appears if you actually run the analysis rather than assuming a method will work.
 
-### Phase 2 — Binary Classification
+### Phase 2: Binary Classification
 
 Churn is defined as: did this user's subscription lapse in March 2017?
 
-Features are computed from transactions before February 28, 2017 — a hard cutoff that prevents any future information from leaking into training. A model built without this cutoff achieved AUC 0.9958, which flagged the leakage. After enforcement: 0.9171.
+Features are computed from transactions before February 28, 2017, a hard cutoff that prevents any future information from leaking into training. A model built without this cutoff achieved AUC 0.9958, which flagged the leakage. After enforcement: 0.9171.
 
 **Feature groups:**
 - **RFM:** recency, frequency, total and average spend
@@ -62,7 +62,7 @@ Features are computed from transactions before February 28, 2017 — a hard cuto
 Three modes, built for different audiences:
 
 **Campaign Builder** (Marketing)
-Score users, filter by risk segment, download a prioritized contact list with recommended intervention per user. Includes a business impact estimator: enter your revenue per user, cost per contact, and expected campaign success rate — get net ROI.
+Score users, filter by risk segment, download a prioritized contact list with recommended intervention per user. Includes a business impact estimator: enter your revenue per user, cost per contact, and expected campaign success rate, get net ROI.
 
 **Cohort Explorer** (Product)
 Threshold sensitivity analysis showing how precision, recall, and campaign size change at every threshold value. Score decile breakdown showing actual churn rate per decile.
@@ -116,26 +116,12 @@ python -m pytest tests/test_pipeline.py -v
 ├── scripts/
 │   └── train.py         # end-to-end CLI pipeline
 ├── tests/
-│   └── test_pipeline.py # 13 logic tests — no Kaggle data required
+│   └── test_pipeline.py # 13 logic tests, no Kaggle data required
 ├── results/
 │   └── artifacts.pkl    # trained models + OOF predictions (Git LFS)
 ├── Dockerfile
 └── requirements.txt
 ```
-
----
-
-## A Note on Data Leakage
-
-This project caught and documented a real leakage problem worth knowing about.
-
-The KKBOX dataset contains two transaction files. One covers historical activity (2015–early 2017). The other covers the evaluation period (March 2017) — the exact period the churn label is measuring. Loading both without a cutoff date means features like "days since last transaction" and "days until membership expires" encode future behavior that wouldn't be available at prediction time.
-
-Model without cutoff: AUC **0.9958** — suspiciously high, and confirmed as leakage by the collapsed score distribution (churners and non-churners perfectly separated).
-
-Model with February 2017 cutoff: AUC **0.9171** — legitimate, consistent across folds, and comparable to published competition baselines.
-
-The test `test_feature_cutoff_enforced` in `tests/test_pipeline.py` injects synthetic future transactions with an obviously wrong value and asserts they don't affect model features — making the fix verifiable, not just documented.
 
 ---
 
